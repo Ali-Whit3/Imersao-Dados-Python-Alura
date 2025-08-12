@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import plotly.express as px
 st.set_page_config(
     page_title="Dashboard com Salários em Data Science",
     page_icon="🎲",
@@ -186,3 +187,4 @@ with col_graf4:
 st.subheader("Dados Detalhados")
 
 st.dataframe(df_filtrado)
+
