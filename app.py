@@ -1,20 +1,14 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-
-# --- Configuração da Página ---
-# Define o título da página, o ícone e o layout para ocupar a largura inteira.
 st.set_page_config(
-    page_title="Dashboard de Salários na Área de Dados",
-    page_icon="📊",
+    page_title="Dashboard com Salários em Data Science",
+    page_icon="🎲",
     layout="wide",
 )
-
-# --- Carregamento dos dados ---
 df = pd.read_csv("https://raw.githubusercontent.com/vqrca/dashboard_salarios_dados/refs/heads/main/dados-imersao-final.csv")
-
 # --- Barra Lateral (Filtros) ---
-st.sidebar.header("🔍 Filtros")
+st.sidebar.header("👁️Filtros👁️")
 
 # Filtro de Ano
 anos_disponiveis = sorted(df['ano'].unique())
@@ -40,9 +34,8 @@ df_filtrado = df[
     (df['contrato'].isin(contratos_selecionados)) &
     (df['tamanho_empresa'].isin(tamanhos_selecionados))
 ]
-
 # --- Conteúdo Principal ---
-st.title("🎲 Dashboard de Análise de Salários na Área de Dados")
+st.title("📊 Dashboard com Salários em Data Science")
 st.markdown("Explore os dados salariais na área de dados nos últimos anos. Utilize os filtros à esquerda para refinar sua análise.")
 
 # --- Métricas Principais (KPIs) ---
@@ -110,13 +103,70 @@ with col_graf3:
             names='tipo_trabalho',
             values='quantidade',
             title='Proporção dos tipos de trabalho',
-            hole=0.5  
+            hole=0.5
         )
         grafico_remoto.update_traces(textinfo='percent+label')
         grafico_remoto.update_layout(title_x=0.1)
         st.plotly_chart(grafico_remoto, use_container_width=True)
     else:
         st.warning("Nenhum dado para exibir no gráfico dos tipos de trabalho.")
+
+st.markdown("---")
+st.subheader("Cientistas de Dados: Top 10 países por média salarial")
+
+if not df_filtrado.empty:
+    # Filtra apenas Cientistas de Dados
+    df_cientista_dados = df_filtrado[df_filtrado['cargo'] == 'Data Scientist']
+
+    # Top 10 países por quantidade de Cientistas de Dados
+    contagem_por_residencia = df_cientista_dados['residencia'].value_counts().nlargest(10).reset_index()
+    contagem_por_residencia.columns = ['residencia', 'quantidade_cientistas_dados']
+
+    # Salário médio nesses países
+    salario_medio_top_10 = df_cientista_dados[df_cientista_dados['residencia'].isin(contagem_por_residencia['residencia'])] \
+        .groupby('residencia')['usd'].mean().reset_index()
+
+    # Junta os dois dataframes
+    dados_plot = pd.merge(contagem_por_residencia, salario_medio_top_10, on='residencia')
+    dados_plot = dados_plot.sort_values('usd', ascending=False)
+
+    # Dicionário de nomes dos países
+    country_names = {
+        'LT': 'Lituânia',
+        'AU': 'Austrália',
+        'FR': 'França',
+        'AT': 'Áustria',
+        'DE': 'Alemanha',
+        'ES': 'Espanha',
+        'NL': 'Holanda',
+        'GB': 'Reino Unido',
+        'CA': 'Canadá',
+        'US': 'Estados Unidos'
+    }
+
+    fig_cientista = px.bar(
+        dados_plot,
+        x='residencia',
+        y='usd',
+        title='Média Salarial para Cientistas de Dados nos Top 10 Países (USD)',
+        labels={'residencia': 'País de Residência', 'usd': 'Média Salarial Anual (USD)'},
+        text='quantidade_cientistas_dados'
+    )
+
+    fig_cientista.update_layout(
+        xaxis={
+            'categoryorder': 'array',
+            'categoryarray': dados_plot['residencia'].tolist(),
+            'tickmode': 'array',
+            'tickvals': dados_plot['residencia'].tolist(),
+            'ticktext': [f"{code}<br>({country_names.get(code, code)})" for code in dados_plot['residencia'].tolist()]
+        },
+        title_x=0.1
+    )
+
+    st.plotly_chart(fig_cientista, use_container_width=True)
+else:
+    st.warning("Nenhum dado para exibir para Cientistas de Dados.")
 
 with col_graf4:
     if not df_filtrado.empty:
@@ -131,8 +181,8 @@ with col_graf4:
         grafico_paises.update_layout(title_x=0.1)
         st.plotly_chart(grafico_paises, use_container_width=True)
     else:
-        st.warning("Nenhum dado para exibir no gráfico de países.") 
+        st.warning("Nenhum dado para exibir no gráfico de países.")
 
-# --- Tabela de Dados Detalhados ---
+
 st.subheader("Dados Detalhados")
 st.dataframe(df_filtrado)
